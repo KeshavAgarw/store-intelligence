@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+CCTV Footage/
+output/
+*.mp4
+yolov8n.pt
+.git/
+data/*.db
+data/test_store.db

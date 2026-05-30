@@ -1,0 +1,12 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+    environment:
+      DATABASE_URL: sqlite:///./data/store.db
+      DATA_DIR: /app/data
+      METRICS_REFERENCE_DATE: "2026-03-03T12:00:00Z"
