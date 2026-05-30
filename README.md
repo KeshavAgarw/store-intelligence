@@ -1,81 +1,254 @@
 # Store Intelligence
 
-End-to-end Store Intelligence system for the Purplle Tech Challenge: CCTV detection pipeline → structured events → analytics API.
+### AI-powered retail analytics from CCTV footage
 
-## Quick start (5 commands)
+Store Intelligence transforms raw CCTV video streams into actionable retail insights using computer vision, event processing, and analytics APIs.
+
+---
+
+# Problem
+
+Online businesses have complete visibility into customer journeys, including clicks, sessions, funnels, and conversions. Physical retail stores, however, often lack equivalent analytics despite having CCTV infrastructure already deployed.
+
+This results in limited understanding of visitor behavior, queue formation, dwell patterns, and conversion bottlenecks. Retail managers frequently rely on manual observation rather than data-driven decision making.
+
+Store Intelligence bridges this gap by converting CCTV footage into structured retail analytics.
+
+---
+
+# Solution
+
+The platform provides:
+
+* Person detection using YOLOv8
+* Multi-object tracking across video frames
+* Visitor session creation
+* Entry and exit detection
+* Zone movement analysis
+* Billing queue monitoring
+* Event stream generation (JSONL)
+* Analytics API for business metrics
+* Conversion funnel reporting
+* Heatmap generation
+* Anomaly detection
+
+---
+
+# System Architecture
+
+
+flowchart
+
+A[CCTV Video] --> B[CV Pipeline<br/>YOLOv8 + Tracking]
+
+B --> C[Events JSONL]
+
+C --> D[FastAPI Analytics Service]
+
+D --> E[Metrics Dashboard]
+
+D --> F[Metrics API]
+
+D --> G[Funnel Analytics]
+
+D --> H[Heatmaps]
+
+D --> I[Anomaly Detection]
+
+
+---
+
+# Detection Pipeline
+
+### Computer Vision Layer
+
+* YOLOv8 for person detection
+* Multi-object tracking for persistent identities
+* Zone assignment using store layout polygons
+* Event extraction from tracked trajectories
+
+### Generated Events
+
+* ENTRY
+* EXIT
+* ZONE_ENTER
+* ZONE_EXIT
+* ZONE_DWELL
+* BILLING_QUEUE_JOIN
+* BILLING_QUEUE_ABANDON
+* REENTRY
+
+---
+
+# Analytics API
+
+The FastAPI service exposes:
+
+| Endpoint               | Purpose               |
+| -----------------------| --------------------- |
+| /health                | Service health        |
+| /events/ingest         | Event ingestion       |
+| /stores/{id}/metrics   | Visitor analytics     |
+| /stores/{id}/funnel    | Conversion funnel     |
+| /stores/{id}/heatmap   | Zone activity         |
+| /stores/{id}/anomalies | Operational anomalies |
+
+---
+
+# Tech Stack
+
+| Layer            | Technology |
+| ---------------- | ---------- |
+| Detection        | YOLOv8     |
+| Tracking         | ByteTrack  |
+| Video Processing | OpenCV     |
+| API              | FastAPI    |
+| Validation       | Pydantic   |
+| Database         | SQLite     |
+| ORM              | SQLAlchemy |
+| Dashboard        | Streamlit  |
+| Testing          | Pytest     |
+| Containerization | Docker     |
+| Language         | Python     |
+
+---
+
+# Project Structure
+
+
+store-intelligence/
+│
+├── app/
+├── pipeline/
+├── scripts/
+├── tests/
+├── docs/
+├── data/
+├── output/
+│
+├── README.md
+├── requirements.txt
+├── Dockerfile
+└── docker-compose.yml
+
+
+---
+
+# How To Run
+
+## 1. Create Virtual Environment
 
 ```bash
-git clone <your-repo-url>
-cd store-intelligence
-docker compose up -d --build
-curl http://localhost:8000/health
-python scripts/ingest_events.py --file data/sample_events.jsonl
-curl http://localhost:8000/stores/STORE_BLR_002/metrics
+python -m venv .venv
 ```
 
-## Local development (without Docker)
+## 2. Activate Environment
+
+Windows:
 
 ```powershell
-python -m venv .venv
 .venv\Scripts\Activate.ps1
+```
+
+## 3. Install Dependencies
+
+```bash
 pip install -r requirements.txt
-$env:METRICS_REFERENCE_DATE = "2026-03-03T12:00:00Z"
+```
+
+## 4. Start API
+
+```bash
 uvicorn app.main:app --reload
 ```
 
-## Run detection pipeline
+## 5. Verify Service
 
-Process all CCTV clips and write events to `output/events.jsonl`:
-
-```powershell
-pip install ultralytics opencv-python-headless
-python -m pipeline.detect --clips "CCTV Footage" --layout data/store_layout.json --out output/events.jsonl
+```bash
+curl http://localhost:8000/health
 ```
 
-Dev mode (first 300 frames per clip):
+or
 
 ```powershell
-python -m pipeline.detect --clips "CCTV Footage" --max-frames 300 --frame-stride 3
+Invoke-RestMethod http://localhost:8000/health
 ```
 
-Ingest pipeline output into the API:
+## 6. Run Detection Pipeline
 
-```powershell
+```bash
+python pipeline/detect.py
+```
+
+## 7. Ingest Generated Events
+
+```bash
 python scripts/ingest_events.py --file output/events.jsonl
 ```
 
-## API endpoints
+## 8. Launch Dashboard
 
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | `/events/ingest` | Batch ingest up to 500 events (idempotent by `event_id`) |
-| GET | `/stores/{id}/metrics` | Visitors, conversion, dwell, queue, abandonment |
-| GET | `/stores/{id}/funnel` | Entry → Zone → Billing → Purchase funnel |
-| GET | `/stores/{id}/heatmap` | Zone frequency and dwell scores (0–100) |
-| GET | `/stores/{id}/anomalies` | Queue spike, conversion drop, dead zones |
-| GET | `/health` | Service and per-store feed freshness |
+```bash
+streamlit run scripts/dashboard.py
+```
 
-## Tests
+---
 
-```powershell
-$env:METRICS_REFERENCE_DATE = "2026-03-03T12:00:00Z"
+# Sample Metrics Response
+
+```json
+{
+  "store_id": "STORE_BLR_002",
+  "unique_visitors": 142,
+  "conversion_rate": 0.27,
+  "avg_dwell_seconds": 184.6,
+  "current_queue_depth": 3,
+  "abandonment_rate": 0.08
+}
+```
+
+---
+
+# Testing
+
+Run all tests:
+
+```bash
+pytest -v
+```
+
+Coverage:
+
+```bash
 pytest --cov=app --cov=pipeline --cov-report=term-missing
 ```
 
-## Project layout
+---
 
-```
-app/          FastAPI intelligence API
-pipeline/     YOLOv8 detection + tracking + event emission
-data/         store_layout.json, POS CSV, sample events
-tests/        API and pipeline unit tests
-docs/         DESIGN.md, CHOICES.md
-```
+# Limitations
 
-## Environment variables
+* Staff detection currently uses movement-based heuristics.
+* Re-identification accuracy may degrade during severe occlusions.
+* Queue estimation is based on visual occupancy.
+* Built as a single-store prototype.
+* Multi-camera identity fusion is not implemented.
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `DATABASE_URL` | `sqlite:///./data/store.db` | Event storage |
-| `DATA_DIR` | `data` | Layout and POS files |
-| `METRICS_REFERENCE_DATE` | today (UTC) | Metrics window for challenge clips |
+---
+
+# Future Work
+
+* Deep re-identification models
+* Cross-camera tracking
+* Multi-store deployment
+* PostgreSQL analytics backend
+* Kafka event streaming
+* Real-time dashboards
+* Predictive anomaly detection
+
+---
+
+# Author
+
+**Keshav Agarwal**
+
+---
