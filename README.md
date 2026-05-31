@@ -36,25 +36,17 @@ The platform provides:
 
 # System Architecture
 
-
-flowchart
-
-A[CCTV Video] --> B[CV Pipeline<br/>YOLOv8 + Tracking]
-
-B --> C[Events JSONL]
-
-C --> D[FastAPI Analytics Service]
-
-D --> E[Metrics Dashboard]
-
-D --> F[Metrics API]
-
-D --> G[Funnel Analytics]
-
-D --> H[Heatmaps]
-
-D --> I[Anomaly Detection]
-
+```mermaid
+flowchart LR
+    A[CCTV Video] --> B[CV Pipeline]
+    B --> C[Events JSONL]
+    C --> D[FastAPI Analytics Service]
+    D --> E[Streamlit Dashboard]
+    D --> F[Metrics API]
+    D --> G[Funnel Analytics]
+    D --> H[Heatmaps]
+    D --> I[Anomaly Detection]
+```
 
 ---
 
@@ -123,6 +115,7 @@ store-intelligence/
 ├── scripts/
 ├── tests/
 ├── docs/
+├── dashboard/
 ├── data/
 ├── output/
 │
@@ -188,9 +181,21 @@ python scripts/ingest_events.py --file output/events.jsonl
 
 ## 8. Launch Dashboard
 
-```bash
-streamlit run scripts/dashboard.py
+**Window 1** — API (must be running):
+
+```powershell
+$env:METRICS_REFERENCE_DATE = "2026-03-03T12:00:00Z"
+uvicorn app.main:app --reload --port 8000
 ```
+
+**Window 2** — Streamlit dashboard:
+
+```powershell
+pip install streamlit plotly pandas
+streamlit run dashboard/app.py
+```
+
+Opens at http://localhost:8501 — metrics, funnel, heatmap, and anomalies from the API.
 
 ---
 
