@@ -1,6 +1,7 @@
 """Health checks and stale feed detection."""
 
 from __future__ import annotations
+import os
 
 from datetime import datetime, timedelta, timezone
 
@@ -27,7 +28,8 @@ def check_database() -> bool:
 
 def compute_health(db: Session) -> HealthResponse:
     db_ok = check_database()
-    now = datetime.now(timezone.utc)
+    ref_str = os.getenv("METRICS_REFERENCE_DATE")
+    now = datetime.fromisoformat(ref_str.replace("Z", "+00:00")).replace(tzinfo=timezone.utc) if ref_str else datetime.now(timezone.utc)
     stale_cutoff = now - timedelta(minutes=STALE_THRESHOLD_MINUTES)
     stores: list[StoreHealth] = []
     any_stale = False
